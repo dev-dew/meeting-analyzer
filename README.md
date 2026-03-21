@@ -196,13 +196,6 @@ src/
 └── types/index.ts               # TypeScript types
 ```
 
----
-
-## License
-MIT — Built for H+ Hotel Plus Senior Developer Assignment
-
----
-
 ## Authentication
 
 The app uses a session-based auth system (iron-session compatible, no NextAuth dependency).
