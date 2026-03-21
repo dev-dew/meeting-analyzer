@@ -4,7 +4,7 @@ import { decodeSession } from '@/lib/session'
 const PUBLIC_PATHS = ['/login', '/register']
 const PUBLIC_API = ['/api/auth/login', '/api/auth/register']
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // Always allow static files, images, etc.
