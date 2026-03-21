@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("member") // admin | member
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  meetings  Meeting[]
+
+  @@map("users")
+}
+
+model Meeting {
+  id            String   @id @default(cuid())
+  title         String
+  meetingType   String
+  participants  Json
+  meetingDate   DateTime
+  transcript    String   @db.Text
+  inputMethod   String
+  videoUrl      String?
+
+  createdBy     String
+  user          User     @relation(fields: [createdBy], references: [id])
+
+  meetingScore        Int?
+  actionItemsScore    Int?
+  decisionMadeScore   Int?
+  speakingBalance     Int?
+  topicFocusScore     Int?
+  durationEfficiency  Int?
+
+  riskLevel     String?
+  riskSignals   Json?
+
+  salesScore              Int?
+  presentationStructure   Int?
+  engagementScore         Int?
+  questionQualityScore    Int?
+  speechPaceScore         Int?
+
+  summary          String?  @db.Text
+  keyInsights      Json?
+  actionItems      Json?
+  improvements     Json?
+  sentimentOverall String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("meetings")
+}
