@@ -239,4 +239,4 @@ The app uses a session-based auth system (iron-session compatible, no NextAuth d
 3. ใส่ใน .env: `GROQ_API_KEY="gsk_..."`
 
 ### รองรับไฟล์
-MP4, WebM, MP3, M4A, WAV, OGG, FLAC, MOV (ไม่เกิน 25MB)
+MP4, WebM, MP3, M4A, WAV, OGG, FLAC, MOV (ไม่เกิน 1GB)
