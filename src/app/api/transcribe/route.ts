@@ -338,8 +338,111 @@ export async function POST(req: NextRequest) {
 
     const contentType = req.headers.get('content-type') || ''
 
+    // ─── METHOD 0: Chunked upload (recommended for very large files) ───
+    if (req.headers.get('x-upload-session')) {
+      const session = req.headers.get('x-upload-session')!
+      const chunkIndex = Number(req.headers.get('x-chunk-index') || '0')
+      const chunkTotal = Number(req.headers.get('x-chunk-total') || '1')
+      const filename = req.headers.get('x-filename') || 'audio.mp4'
+
+      if (!Number.isFinite(chunkIndex) || !Number.isFinite(chunkTotal) || chunkIndex < 0 || chunkIndex >= chunkTotal) {
+        return NextResponse.json({ error: 'Invalid chunk metadata' }, { status: 400 })
+      }
+
+      const uploadDir = join(tmpdir(), `transcribe-upload-${session}`)
+      await fs.mkdir(uploadDir, { recursive: true })
+
+      const partPath = join(uploadDir, `${String(chunkIndex).padStart(6, '0')}.part`)
+      const partData = Buffer.from(await req.arrayBuffer())
+      await fs.writeFile(partPath, partData)
+
+      const receivedParts = (await fs.readdir(uploadDir)).filter((n) => n.endsWith('.part')).length
+
+      if (chunkIndex + 1 < chunkTotal) {
+        return NextResponse.json({ status: 'chunk_received', chunkIndex, receivedParts })
+      }
+
+      // final chunk received: assemble and process
+      const finalPath = join(uploadDir, `final-${Date.now()}-${filename}`)
+      const finalHandle = await fs.open(finalPath, 'w')
+      try {
+        for (let i = 0; i < chunkTotal; i++) {
+          const filePath = join(uploadDir, `${String(i).padStart(6, '0')}.part`)
+          const chunkBuffer = await fs.readFile(filePath)
+          await finalHandle.write(chunkBuffer)
+        }
+      } finally {
+        await finalHandle.close()
+      }
+
+      const mergedBuffer = await fs.readFile(finalPath)
+      if (mergedBuffer.length > 1024 * 1024 * 1024) {
+        await fs.rm(uploadDir, { recursive: true, force: true })
+        return NextResponse.json({ error: 'ไฟล์ใหญ่เกิน 1GB ไม่สามารถประมวลผลได้' }, { status: 413 })
+      }
+
+      try {
+        const transcript = await transcribeMaybeChunked(mergedBuffer, filename, groqApiKey)
+        await fs.rm(uploadDir, { recursive: true, force: true })
+        return NextResponse.json({ transcript, method: 'upload-chunked', filename, size: mergedBuffer.length })
+      } catch (processingError) {
+        await fs.rm(uploadDir, { recursive: true, force: true })
+        console.error('Chunked upload processing error:', processingError)
+        return NextResponse.json({ error: String(processingError) }, { status: 500 })
+      }
+    }
+
+    // ─── METHOD 1: Raw upload (Direct body) for small-medium files ──
+    if (contentType === 'application/octet-stream' || contentType.startsWith('audio/') || contentType.startsWith('video/')) {
+      try {
+        const fileData = await req.arrayBuffer()
+        const buffer = Buffer.from(fileData)
+
+        const CLIENT_MAX_FILE_SIZE = 1024 * 1024 * 1024 // 1GB
+        if (buffer.length > CLIENT_MAX_FILE_SIZE) {
+          return NextResponse.json({ error: 'ไฟล์ใหญ่เกิน 1GB ไม่สามารถประมวลผลได้' }, { status: 413 })
+        }
+
+        const declaredSize = Number(req.headers.get('x-filesize') || '0')
+        if (declaredSize > 0 && buffer.length !== declaredSize) {
+          console.error('Raw upload size mismatch', {
+            declaredSize,
+            receivedSize: buffer.length,
+            contentType,
+            filename: req.headers.get('x-filename'),
+          })
+          return NextResponse.json({
+            error: `ขนาดไฟล์ไม่ตรง (ได้รับ ${buffer.length} bytes จาก ${declaredSize} bytes) — ต้องใช้การอัปโหลดใหม่หรือใช้ URL/Storage`,
+          }, { status: 400 })
+        }
+
+        const filename = req.headers.get('x-filename') || `audio.${contentType.split('/')[1] || 'mp4'}`
+        const transcript = await transcribeMaybeChunked(buffer, filename, groqApiKey)
+        return NextResponse.json({ transcript, method: 'upload-raw', filename, size: buffer.length })
+      } catch (rawError) {
+        console.error('Raw upload error:', rawError)
+        return NextResponse.json({ error: `Failed to parse raw upload: ${String(rawError)}` }, { status: 400 })
+      }
+    }
+
+    // ─── METHOD 2: File Upload (FormData, legacy) ──────────────────
+    if (contentType.startsWith('multipart/form-data')) {
+      try {
+        const formData = await req.formData()
+        const file = formData.get('file') as File | null
+        if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
+
+        const buffer = Buffer.from(await file.arrayBuffer())
+        const transcript = await transcribeMaybeChunked(buffer, file.name, groqApiKey)
+        return NextResponse.json({ transcript, method: 'upload', filename: file.name })
+      } catch (formDataError) {
+        console.error('FormData parse error:', formDataError)
+        return NextResponse.json({ error: `Failed to parse form data: ${String(formDataError)}` }, { status: 400 })
+      }
+    }
+
     // ─── METHOD 1: Google Drive URL ───────────────────────────────
-    if (contentType.includes('application/json')) {
+    if (contentType.startsWith('application/json')) {
       const { driveUrl } = await req.json()
       if (!driveUrl) return NextResponse.json({ error: 'No URL provided' }, { status: 400 })
 
@@ -377,17 +480,6 @@ export async function POST(req: NextRequest) {
 
       const transcript = await transcribeMaybeChunked(buffer, filename, apiKey)
       return NextResponse.json({ transcript, method: 'drive' })
-    }
-
-    // ─── METHOD 2: File Upload ────────────────────────────────────
-    if (contentType.includes('multipart/form-data')) {
-      const formData = await req.formData()
-      const file = formData.get('file') as File | null
-      if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
-
-      const buffer = Buffer.from(await file.arrayBuffer())
-      const transcript = await transcribeMaybeChunked(buffer, file.name, groqApiKey)
-      return NextResponse.json({ transcript, method: 'upload', filename: file.name })
     }
 
     return NextResponse.json({ error: 'Unsupported content type' }, { status: 400 })

@@ -78,13 +78,67 @@ export default function AnalyzePage() {
     if (!uploadedFile) return setTranscribeError('กรุณาเลือกไฟล์ก่อน')
     setTranscribing(true)
     setTranscribeError('')
+
+    const CHUNK_SIZE = 8 * 1024 * 1024 // 8MB per chunk
+    const useChunked = uploadedFile.size > 100 * 1024 * 1024 // files >100MB for chunked strategy
+
     try {
-      const fd = new FormData()
-      fd.append('file', uploadedFile)
-      const res = await fetch('/api/transcribe', { method: 'POST', body: fd })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setForm(f => ({ ...f, transcript: data.transcript }))
+      let res
+      if (useChunked) {
+        const session = crypto.randomUUID()
+        const chunkTotal = Math.ceil(uploadedFile.size / CHUNK_SIZE)
+        setTranscribeError(`อัปโหลด chunk 0/${chunkTotal}`)
+
+        for (let i = 0; i < chunkTotal; i++) {
+          const start = i * CHUNK_SIZE
+          const end = Math.min(uploadedFile.size, start + CHUNK_SIZE)
+          const chunk = uploadedFile.slice(start, end)
+          const chunkData = await chunk.arrayBuffer()
+
+          res = await fetch('/api/transcribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'x-upload-session': session,
+              'x-chunk-index': i.toString(),
+              'x-chunk-total': chunkTotal.toString(),
+              'x-filename': uploadedFile.name,
+              'x-filetype': uploadedFile.type || 'application/octet-stream',
+              'x-filesize': uploadedFile.size.toString(),
+            },
+            body: chunkData,
+          })
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: 'Unknown chunk upload error' }))
+            throw new Error(err.error || 'Failed uploading chunk')
+          }
+
+          const snippet = await res.json().catch(() => null)
+          const currentChunk = i + 1
+          if (currentChunk < chunkTotal) {
+            setTranscribeError(`อัปโหลด chunk ${currentChunk}/${chunkTotal}`)
+            continue
+          }
+
+          if (snippet && snippet.transcript) {
+            setTranscribeError('')
+            setForm(f => ({ ...f, transcript: snippet.transcript }))
+            return
+          }
+
+          if (snippet && snippet.error) {
+            throw new Error(snippet.error)
+          }
+        }
+      } else {
+        const fd = new FormData()
+        fd.append('file', uploadedFile)
+        res = await fetch('/api/transcribe', { method: 'POST', body: fd })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+        setForm(f => ({ ...f, transcript: data.transcript }))
+      }
     } catch (e: any) {
       setTranscribeError(e.message)
     } finally {
@@ -208,6 +262,11 @@ export default function AnalyzePage() {
                   placeholder="https://drive.google.com/file/d/xxxx/view หรือ https://zoom.us/rec/share/xxxx"
                   className="flex-1 px-4 py-3 rounded-xl text-sm text-white placeholder-[#444] outline-none focus:ring-1 focus:ring-[#F5C800]"
                   style={inputStyle} />
+                {/* <button onClick={handleTranscribeDrive} disabled={transcribing || !form.driveUrl.trim()}
+                  className="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
+                  style={{ background: 'rgba(245,200,0,0.1)', border: '1px solid rgba(245,200,0,0.3)', color: '#F5C800' }}>
+                  {transcribing ? <><Loader2 size={14} className="animate-spin" /> กำลังดึงข้อมูล...</> : 'ดึงจาก Drive'}
+                </button> */}
               </div>
 
               {/* Drive transcript result */}
