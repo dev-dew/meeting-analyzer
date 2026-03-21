@@ -21,9 +21,6 @@ AI-powered web application that analyzes hotel client meeting transcripts to:
 | Frontend   | Next.js 16, React 18, Tailwind CSS |
 | Backend    | Next.js App Router API Routes    |
 | Database   | PostgreSQL + Prisma ORM          |
-| AI / NLP   | Anthropic Claude (claude-sonnet-4) |
-| Charts     | Recharts                         |
-| Deploy     | Vercel                            |
 
 ---
 
@@ -80,7 +77,7 @@ Open [http://localhost:3000](http://localhost:3000)
 2. **Participants** — Names and roles (Staff / Client)
 3. **Transcript** — Paste text or enter URL + notes
 
-### 🤖 AI Analysis (Claude)
+### 🤖 AI Analysis 
 - **Meeting Quality Score** (0–100) from 5 metrics:
   - Action Items clarity
   - Decision Made quality
@@ -131,24 +128,6 @@ Meeting Score = avg(actionItems, decisionMade, speakingBalance, topicFocus, dura
 ```
 Sales Score = avg(presentationStructure, engagement, questionQuality, speechPace)
 ```
-
----
-
-## Deployment
-
-### Vercel (Recommended)
-```bash
-vercel --prod
-```
-
-Set environment variables in Vercel dashboard:
-- `DATABASE_URL` — PostgreSQL connection string
-- `ANTHROPIC_API_KEY` — Your Anthropic API key
-
-### Database options
-- **Railway** — `railway up` (auto-detects PostgreSQL)
-- **Supabase** — Free tier, copy connection string
-- **Neon** — Serverless PostgreSQL
 
 ---
 
@@ -232,3 +211,26 @@ The app uses a session-based auth system (iron-session compatible, no NextAuth d
 
 ### รองรับไฟล์
 MP4, WebM, MP3, M4A, WAV, OGG, FLAC, MOV (ไม่เกิน 1GB)
+
+
+ระบบนี้ใช้ NLP Engin
+
+transcript (ข้อความการประชุม)
+        ↓
+NLP อ่านและวิเคราะห์
+        ↓
+- จับ keyword สำคัญ
+- แยกผู้พูด
+- หา pattern เสี่ยง
+- คำนวณคะแนน
+        ↓
+ผลลัพธ์: score + risk + insights
+
+### Meeting Score สุดท้าย
+Meeting Score = 
+  Action Items  × 25% +
+  Decision Made × 20% +
+  Speaking Bal  × 20% +
+  Topic Focus   × 20% +
+  Duration      × 15%
+

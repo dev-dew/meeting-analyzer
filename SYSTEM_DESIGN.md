@@ -21,8 +21,8 @@
 └──────────┬────────────────────────┬────────────────────┘
            │                        │
 ┌──────────▼──────────┐  ┌─────────▼─────────────────────┐
-│   ANTHROPIC API      │  │      POSTGRESQL DATABASE       │
-│   claude-sonnet-4    │  │      (via Prisma ORM)          │
+│    API               │  │      POSTGRESQL DATABASE       │
+│                      │  │      (via Prisma ORM)          │
 │                      │  │                                │
 │  Input:              │  │  Table: meetings               │
 │  - Transcript text   │  │  - Scores (all metrics)       │
