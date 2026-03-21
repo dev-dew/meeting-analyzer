@@ -167,7 +167,7 @@ async function transcribeWithGroq(audioBuffer: Buffer, filename: string, apiKey:
   const mime = mimeMap[ext] || 'audio/mpeg'
 
   const formData = new FormData()
-  const blob = new Blob([audioBuffer], { type: mime })
+  const blob = new Blob([new Uint8Array(audioBuffer)], { type: mime })
   formData.append('file', blob, filename)
   formData.append('model', 'whisper-large-v3-turbo') // Groq's fastest Whisper model
   formData.append('language', 'th')
