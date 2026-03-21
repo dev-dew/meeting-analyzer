@@ -1,7 +1,6 @@
 # H+ Meeting Analyzer
 
 **Meeting Performance Measurement & Termination Warning System**  
-Built for H+ Hotel Plus — Full Stack Developer Assignment
 
 ---
 
@@ -19,12 +18,12 @@ AI-powered web application that analyzes hotel client meeting transcripts to:
 
 | Layer      | Technology                      |
 |------------|----------------------------------|
-| Frontend   | Next.js 15, React 18, Tailwind CSS |
+| Frontend   | Next.js 16, React 18, Tailwind CSS |
 | Backend    | Next.js App Router API Routes    |
 | Database   | PostgreSQL + Prisma ORM          |
 | AI / NLP   | Anthropic Claude (claude-sonnet-4) |
 | Charts     | Recharts                         |
-| Deploy     | Vercel + Railway / Supabase       |
+| Deploy     | Vercel                            |
 
 ---
 
