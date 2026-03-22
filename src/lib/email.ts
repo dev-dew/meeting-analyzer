@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY || 'placeholder')
+}
 
 const FROM = process.env.EMAIL_FROM || 'H+ Meeting Analyzer <noreply@hotelplus.asia>'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || ''
@@ -190,7 +191,7 @@ export async function sendMeetingReport(meeting: any, recipientEmail: string) {
 
   try {
     console.log(`[Email] Sending report to ${recipientEmail}...`)
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to: recipientEmail,
       subject: `${riskEmoji} Meeting Report: ${meeting.title} — Score ${mainScore}/100`,
@@ -282,7 +283,7 @@ export async function sendWeeklyDigest(meetings: any[], recipientEmail: string) 
   }
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: FROM,
       to: recipientEmail,
       subject: `📊 Weekly Digest — ${meetings.length} meetings, avg ${avgScore}/100${highRisk > 0 ? `, ${highRisk} high risk` : ''}`,
