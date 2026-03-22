@@ -1,14 +1,16 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, PlusCircle, FileText, LogOut, TrendingUp, Users } from 'lucide-react'
+import { LayoutDashboard, PlusCircle, FileText, LogOut, TrendingUp, Archive, Users, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/analyze', icon: PlusCircle, label: 'New Analysis' },
-  { href: '/meetings', icon: FileText, label: 'All Meetings' },
+  { href: '/analyze',   icon: PlusCircle,      label: 'New Analysis' },
+  { href: '/meetings',  icon: Archive,          label: 'Meeting Records' },
+  { href: '/users',     icon: Users,            label: 'All Users' },
+  { href: '/settings',  icon: Settings,         label: 'Settings' },
 ]
 
 export function Sidebar() {

@@ -10,20 +10,20 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@hotelplus.asia' },
-    update: {},
-    create: { name: 'Admin H+', email: 'admin@hotelplus.asia', password: adminPass, role: 'admin' },
+    update: { notificationEnabled: true },
+    create: { name: 'Admin H+', email: 'admin@hotelplus.asia', password: adminPass, role: 'admin', notificationEnabled: true },
   })
 
   const bank = await prisma.user.upsert({
     where: { email: 'bank@hotelplus.asia' },
-    update: {},
-    create: { name: 'คุณแบงค์', email: 'bank@hotelplus.asia', password: memberPass, role: 'member' },
+    update: { notificationEnabled: true },
+    create: { name: 'คุณแบงค์', email: 'bank@hotelplus.asia', password: memberPass, role: 'member', notificationEnabled: true },
   })
 
   const yaya = await prisma.user.upsert({
     where: { email: 'yaya@hotelplus.asia' },
-    update: {},
-    create: { name: 'คุณยาย่า', email: 'yaya@hotelplus.asia', password: memberPass, role: 'member' },
+    update: { notificationEnabled: true },
+    create: { name: 'คุณยาย่า', email: 'yaya@hotelplus.asia', password: memberPass, role: 'member', notificationEnabled: true },
   })
 
   // Seed demo meetings

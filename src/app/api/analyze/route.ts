@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { analyzeMeeting } from '@/lib/ai'
 import { getSession } from '@/lib/session'
+import { sendMeetingReport } from '@/lib/email'
 import { z } from 'zod'
 
 const Schema = z.object({
@@ -55,6 +56,16 @@ export async function POST(req: NextRequest) {
         sentimentOverall: analysis.sentimentOverall,
       },
     })
+
+    // 📧 Send email report if user enabled notifications
+    const user = await prisma.user.findUnique({ where: { id: session.id } })
+    console.log(`[Analyze] User notification status: ${user?.notificationEnabled} (email: ${user?.email})`)
+    if (user?.notificationEnabled) {
+      console.log(`[Analyze] Sending email report to ${user.email}...`)
+      await sendMeetingReport(meeting, user.email)
+    } else {
+      console.log(`[Analyze] Email notifications disabled for user ${user?.email}`)
+    }
 
     return NextResponse.json({ success: true, meeting })
   } catch (error) {

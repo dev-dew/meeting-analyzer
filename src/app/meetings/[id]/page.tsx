@@ -7,9 +7,15 @@ import { MeetingDetailClient } from './MeetingDetailClient'
 export default async function MeetingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session) redirect('/login')
+
   const { id } = await params
+  const normalizedId = String(id ?? '').trim()
+  if (!normalizedId || normalizedId === 'undefined' || normalizedId === 'null') {
+    notFound()
+  }
+
   const meeting = await prisma.meeting.findUnique({
-    where: { id },
+    where: { id: normalizedId },
     include: { user: { select: { name: true, email: true } } },
   })
   if (!meeting) notFound()

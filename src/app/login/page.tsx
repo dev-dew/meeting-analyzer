@@ -77,7 +77,7 @@ export default function LoginPage() {
             {[
               { icon: '🎯', label: 'Meeting Quality Score', desc: 'วัดคุณภาพการประชุมแบบ real-time' },
               { icon: '⚠️', label: 'Risk Detection', desc: 'ตรวจจับสัญญาณยกเลิกสัญญา' },
-              { icon: '✨', label: 'AI Analysis', desc: 'วิเคราะห์ด้วย Groq AI + NLP' },
+              { icon: '✨', label: 'AI Analysis', desc: 'วิเคราะห์ด้วย Groq AI + NLP Engine' },
             ].map(f => (
               <div key={f.label} className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base flex-shrink-0"

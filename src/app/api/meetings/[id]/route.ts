@@ -3,13 +3,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await params
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { id } = await params
+    const normalizedId = String(id ?? '').trim()
+    if (!normalizedId || normalizedId === 'undefined' || normalizedId === 'null') {
+      return NextResponse.json({ error: 'Meeting ID is required' }, { status: 400 })
+    }
     const meeting = await prisma.meeting.findUnique({
-      where: { id },
+      where: { id: normalizedId },
       include: { user: { select: { name: true, email: true } } },
     })
     if (!meeting) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -19,12 +26,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await params
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    await prisma.meeting.delete({ where: { id } })
+    const { id } = await params
+    const normalizedId = String(id ?? '').trim()
+    if (!normalizedId || normalizedId === 'undefined' || normalizedId === 'null') {
+      return NextResponse.json({ error: 'Meeting ID is required' }, { status: 400 })
+    }
+    await prisma.meeting.delete({ where: { id: normalizedId } })
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 })
